@@ -1,0 +1,95 @@
+NAME
+    Object::Role - base class for non-Moose roles
+
+SYNOPSIS
+     {
+       package Object::Dumpable;
+       use base qw/Object::Role/;
+       use Data::Dumper;
+       sub import
+       {
+         my ($class, @args) = @_;
+         my ($caller, %args) = __PACKAGE__->parse_arguments(undef, @args);
+         my $coderef = sub
+           {
+             my ($self) = @_;
+             return Dumper($self);
+           };
+         __PACKAGE__->install_method(dump => $coderef, $caller);
+       }
+     }
+ 
+     {
+       package Foo;
+       use Object::Dumpable;
+       sub new { ... }
+     }
+ 
+     {
+       package main;
+       my $foo = Foo->new;
+       warn $foo->dump;
+     }
+
+DESCRIPTION
+    This will be better documented once I fully understand it myself!
+
+    The idea of this is to be a base class for roles like Object::DOES,
+    Object::Stash and Object::ID. It handles parsing of import arguments,
+    installing methods into the caller's namespace (like Exporter, but using
+    a technique that is immune to namespace::autoclean) and tracking which
+    packages have consumed your role.
+
+    While "Object::Role" is a base class for roles, it is not itself a role,
+    so does not export anything. Instead, your role must inherit from it.
+
+  Methods
+    "parse_arguments($default_arg_name, @arguments)"
+        Will parse:
+
+          package My::Class;
+          use My::Role -foo => 1, -bar => [2,3], 4, 5;
+
+        as:
+
+          (
+            'My::Class',   # caller,
+            (
+              '-foo'             => [1],
+              '-bar'             => [2, 3],
+              $default_arg_name  => [4, 5],
+            )
+          )
+
+    "install_method($subname => $coderef, $package)"
+        Installs $coderef as "$package\::$subname".
+
+        Automatically calls register_consumer($package).
+
+    "register_consumer($package)"
+        Records that $package has consumed (used) your role.
+
+    "has_consumer($package)"
+        Check if $package has consumed (used) your role.
+
+BUGS
+    Please report any bugs to
+    <http://rt.cpan.org/Dist/Display.html?Queue=Object-Role>.
+
+SEE ALSO
+    Object::DOES, Object::AUTHORITY.
+
+AUTHOR
+    Toby Inkster <tobyink@cpan.org>.
+
+COPYRIGHT AND LICENCE
+    This software is copyright (c) 2011 by Toby Inkster.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
+
+DISCLAIMER OF WARRANTIES
+    THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+    MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
